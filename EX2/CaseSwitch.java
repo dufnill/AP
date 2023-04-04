@@ -1,3 +1,4 @@
+package EX2;
 public class CaseSwitch {
 
     public int switcha1(int i) {

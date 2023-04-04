@@ -1,3 +1,4 @@
+package EX1;
 class JustCreate{
 
     public static void create(int n) {
