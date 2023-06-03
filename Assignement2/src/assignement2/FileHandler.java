@@ -13,17 +13,29 @@ import java.io.IOException;
  */
 public class FileHandler {
     
-    private File myFile;
-    private FileWriter w;
+    private String dir = System.getProperty("user.dir");
+    private String fileName;
     
-    public FileHandler(String filename){
+    public FileHandler(String fileName){
+        this.fileName = dir + "/" + fileName;
+        System.out.println(this.fileName);
         try {
-          this.myFile= new File(filename);
-          if (this.myFile.createNewFile()) { //file was created
-              this.w = new FileWriter(filename);
-              w.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-              w.close();
+          File myFile = new File(this.fileName);
+          if (myFile.createNewFile()){
+            FileWriter w = new FileWriter(this.fileName);
+            w.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+            w.close();
           }
+          
+        } catch (IOException e) {
+          System.out.println("An error occurred.");
+        }    
+    }
+    public void XMLWrite(String payload){
+        try {
+            FileWriter w = new FileWriter(this.fileName, true);
+            w.write(payload);
+            w.close();
         } catch (IOException e) {
           System.out.println("An error occurred.");
         }    

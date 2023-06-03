@@ -9,6 +9,8 @@ import java.lang.reflect.*;
 
 import java.io.File;
 import java.io.IOException; 
+import java.lang.annotation.Annotation;
+import java.util.ArrayList;
 
 /**
  *
@@ -16,84 +18,110 @@ import java.io.IOException;
  */
 public class XMLSerializer {
     
-    private FileHandler fh = new FileHandler("students.txt");
+    // File handler class is used to create XML files
+    private static FileHandler fh;
     
-    public static void XMLSerializer(){}
+    // ArrayLists used to keep track of the reflected classes
+    private static final ArrayList<Class> classes = new ArrayList<>();
+    private static final ArrayList<Field[]> fields = new ArrayList<>();
+    private static final ArrayList<Annotation> classAnnotations = new ArrayList<>();
+    private static final ArrayList<Annotation[]> fieldAnnotations = new ArrayList<>();
     
-    public void serialize(Object [] arr/*, String filename*/){
+    //file's body
+    public static String fileBody;
+    
+    public static void serialize(Object [] arr, String filename){
+        
+        fh = new FileHandler(filename);
+        fileBody = "";
+        
+        // variables that will contan introspected information about the object
+        int index;
+        Field [] f;
+        Annotation ca;
+        Annotation [] fa;
         
         for (Object obj : arr){
-            //takes the object's class
+            
+            //retrieve class info
             Class objClass = obj.getClass(); 
-            String classInfo = this.getClassInfo(objClass); //takes info about the class
             
-            //takes the class fields info
-            Field [] fieldsArray = objClass.getDeclaredFields();
-            String fieldsInfo = this.getFieldsInfo(fieldsArray);
+            //introspect step is done just once: if the class has not been analyzed yet, save informations
+            if (!classes.contains(objClass)){ 
+                
+                System.out.println("ADDED");
+                f = objClass.getDeclaredFields();
+                ca = (XMLable) objClass.getAnnotation(XMLable.class);
+                fa = getFieldAnnotations(f);
+                
+                classes.add(objClass);
+                fields.add(f);
+                classAnnotations.add(ca);
+                fieldAnnotations.add(fa);
+            } 
+              
+            //infos has been saved yet -> start serializing it
             
-            //takes the class methods info
-            Method [] methodsArray = objClass.getDeclaredMethods(); 
-            String methodsInfo = this.getMethodsInfo(methodsArray);
+            index = classes.indexOf(objClass);
+            f = fields.get(index);
+            ca = classAnnotations.get(index);
+            fa = fieldAnnotations.get(index);
+
             
-            // takess the class constructors info
-            Constructor [] constructorsArray = objClass.getDeclaredConstructors();
-            String constructorsInfo = this.getConstructorsInfo(constructorsArray);
-            
-            this.WriteXMLFile(classInfo, fieldsInfo, methodsInfo, constructorsInfo);
+            if (ca != null){
+                
+                fileBody =  fileBody +
+                            "<" + objClass.getName() + ">\n" +
+                            getFieldsInfo(f, fa, obj) +
+                            "</" +  objClass.getName() + ">\n";                
+                
+            } else {
+                fileBody = fileBody + "<notXMLable />\n";
+            }
 
         }
+        fh.XMLWrite(fileBody);
+        //System.out.println(fileBody);
+    }
+/**
+ * this method retrieves annotation to the fields 
+ */
+    private static Annotation [] getFieldAnnotations(Field [] f){ 
+        Annotation [] a = new Annotation[f.length];
+        for (int i = 0; i < f.length; i++){
+            f[i].setAccessible(true);
+            a[i] = f[i].getAnnotation(XMLfield.class);
+        }
+        return a;
     }
     
-    private void WriteXMLFile(){
-        
-    }
-    
-    private String getClassInfo(Class aClass){
-        
-        String info = aClass.isInterface() ? "interface " : "class "; //get the flavor of the instance
-        info = info + aClass.getName(); //get the class name
-        
-        //get the superclass name
-        Class parent = aClass.getSuperclass();
-        if (parent != null) info = info + " extends " + parent.getName();
-        
-        Class [] interfaces = aClass.getInterfaces();
-        for (Class i : interfaces) info = info + " implements " + i.getName();
-        
-        return info;
-    }
-    
-    private String getFieldsInfo(Field [] aFields){
+/**
+ * this method returns a string XML-like 
+ */
+    private static String getFieldsInfo(Field [] fields, Annotation [] annotations, Object obj){
         String info = "";
-        for (Field field : aFields) 
-            info = info + "Field: " + field.getName() + " of type " + field.getType() + "\n";
+        String fieldName;
+        for (int i = 0; i < fields.length; i++){
+            
+            Field field = fields[i]; 
+            XMLfield x = (XMLfield) annotations[i];
+            
+            if (x != null){
+                if (!x.name().equals(""))
+                    fieldName = x.name();
+                else 
+                    fieldName = field.getName();
+                try{
+                    info =  info + "    <" +
+                            fieldName +
+                            " type=\"" + x.type() + "\">" + 
+                            field.get(obj) +
+                            "</" + fieldName + ">\n";
+                } catch(IllegalAccessException e){}
+                
+            }
+        }
         return info;
     }
     
-    private String getMethodsInfo(Method [] aMethods){
-        String info = "";
-        for (Method method : aMethods){
-            Class [] parameters = method.getParameterTypes();
-            info = info + "Method: " + method.getName() + " of type " + method.getReturnType() + "(";
-            for (Class parameter : parameters)
-                info = info + parameter.getName() + " ";
-            info = info + ")\n";
-        } 
-        
-        return info;
-    }
-    
-    private String getConstructorsInfo(Constructor [] aConstructors){
-        String info = "";
-        for (Constructor constructor : aConstructors) {
-            info = info + "Constructor (";
-            Class [] parameters = constructor.getParameterTypes();
-            for (Class parameter : parameters)
-                info = info + parameter.getName() + " ";
-            info = info + ")\n";  
-        } 
-        return info;
-        
-    }
-        
 }
