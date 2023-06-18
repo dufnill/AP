@@ -2,3 +2,5 @@
 *.txt
 *.o
 *.hi
+/Assignement4/nbproject/private/
+/Assignement4/build/

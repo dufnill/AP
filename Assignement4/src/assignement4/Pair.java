@@ -1,4 +1,6 @@
 
+package assignement4;
+
 public class Pair<K,V>{
     K key;
     V value;
@@ -17,4 +19,3 @@ public class Pair<K,V>{
         return "Key: " + key + "\nValue: " + value;
     }
 }
-
